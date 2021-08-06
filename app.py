@@ -81,6 +81,8 @@ app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 mail = Mail(app)
 app.config['SECRET_KEY'] = 'super-secret'
+app.config['TESTING'] = True
+tests = app.test_client()
 jwt = JWT(app, authenticate, identity)
 
 
