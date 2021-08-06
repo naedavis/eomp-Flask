@@ -26,29 +26,31 @@ def fetch_users():
     return new_data
 
 
+def identity(payload):
+    user_id = payload['identity']
+    return userid_table.get(user_id, None)
+
+
 def authenticate(username, password):
     user = username_table.get(username, None)
     if user and hmac.compare_digest(user.password.encode('utf-8'), password.encode('utf-8')):
         return user
 
 
-def identity(payload):
-    user_id = payload['identity']
-    return userid_table.get(user_id, None)
-
-
+# Function that creates the Table that will contain all the users and their information in the Database if it hasn't
+# been created yet
 def init_user_table():
     conn = sqlite3.connect('product_api.db')
-    print("Opened database successfully")
-
+#   table users that will hold the first name, last name, username and password of the users
     conn.execute("CREATE TABLE IF NOT EXISTS users(user_id INTEGER PRIMARY KEY AUTOINCREMENT,"
                  "first_name TEXT NOT NULL,"
                  "last_name TEXT NOT NULL,"
                  "username TEXT NOT NULL,"
                  "password TEXT NOT NULL)")
-    print("user table created successfully")
 
 
+# Function that creates the Table that will contain all the products and their description in the Database if it hasn't
+# been created yet
 def init_post_table():
     with sqlite3.connect('product_api.db') as conn:
         conn.execute("CREATE TABLE IF NOT EXISTS product(product_id INTEGER PRIMARY KEY AUTOINCREMENT,"
@@ -56,7 +58,6 @@ def init_post_table():
                      "description TEXT NOT NULL,"
                      "category TEXT NOT NULL,"
                      "price TEXT NOT NULL)")
-    print("product table created successfully.")
     conn.close()
 
 
@@ -99,17 +100,17 @@ def add_user():
 
         with sqlite3.connect("product_api.db") as conn:
             cursor = conn.cursor()
-            cursor.execute("INSERT INTO users("
-                           "first_name,"
-                           "last_name,"
-                           "username,"
-                           "password) VALUES(?, ?, ?, ?)", (first_name, last_name, username, password))
+            cursor.execute("INSERT INTO users VALUES(null,"
+                           "'"+first_name+"',"
+                           "'"+last_name+"',"
+                           "'"+username+"',"
+                           "'"+password+"')")
             conn.commit()
             response["message"] = "success"
             response["status_code"] = 201
             if response["status_code"] == 201:
-                msg = Message('Hello Message', sender='lottogirl92@gmail.com', recipients=[email])
-                msg.body = "This is the email body after making some changes"
+                msg = Message('Registration Successful', sender='lottogirl92@gmail.com', recipients=[email])
+                msg.body = "Welcome '"+ str(first_name)+"', You have Successfully Registered as a user of this app"
                 mail.send(msg)
                 return "Sent email"
 
@@ -127,11 +128,11 @@ def add_products():
 
         with sqlite3.connect("product_api.db") as conn:
             cursor = conn.cursor()
-            cursor.execute("INSERT INTO product("
-                           "product_name,"
-                           "description,"
-                           "category,"
-                           "price) VALUES(?, ?, ?, ?)", (product_name, description, category, price))
+            cursor.execute("INSERT INTO product VALUES(null,"
+                           "'"+product_name+"',"
+                           "'"+description+"',"
+                           "'"+category+"',"
+                           "'"+price+"')")
             conn.commit()
             response["message"] = "success"
             response["status_code"] = 201
@@ -157,7 +158,7 @@ def view_product(product_id):
     response = {}
     with sqlite3.connect("product_api.db") as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM product WHERE product_id=?", str(product_id))
+        cursor.execute("SELECT * FROM product WHERE product_id='"+str(product_id)+"'")
         product = cursor.fetchone()
 
     response['status_code'] = 200
@@ -171,7 +172,7 @@ def delete_product(product_id):
 
     with sqlite3.connect('product_api.db') as conn:
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM product WHERE product_id=" + str(product_id))
+        cursor.execute("DELETE FROM product WHERE product_id='"+str(product_id)+"'")
 
         conn.commit()
         response['status_code'] = 200
