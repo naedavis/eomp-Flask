@@ -13,19 +13,6 @@ class User(object):
         self.password = password
 
 
-# function that fetches all the users from the user table in the Products Database
-def fetch_users():
-    with sqlite3.connect('product_api.db') as conn:
-        cursor = conn.cursor()
-        cursor.execute("SELECT * FROM users")
-        users = cursor.fetchall()
-        new_data = []
-#       for loop
-        for data in users:
-            new_data.append(User(data[0], data[3], data[4]))
-    return new_data
-
-
 def identity(payload):
     user_id = payload['identity']
     return userid_table.get(user_id, None)
@@ -37,11 +24,24 @@ def authenticate(username, password):
         return user
 
 
+# function that fetches all the users from the user table in the Products Database
+def fetch_users():
+    with sqlite3.connect('product_api.db') as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT * FROM users")
+        users = cursor.fetchall()
+        new_data = []
+        #       for loop
+        for data in users:
+            new_data.append(User(data[0], data[3], data[4]))
+    return new_data
+
+
 # Function that creates the Table that will contain all the users and their information in the Database if it hasn't
 # been created yet
 def init_user_table():
     conn = sqlite3.connect('product_api.db')
-#   table users that will hold the first name, last name, username and password of the users
+    #   table users that will hold the first name, last name, username and password of the users
     conn.execute("CREATE TABLE IF NOT EXISTS users(user_id INTEGER PRIMARY KEY AUTOINCREMENT,"
                  "first_name TEXT NOT NULL,"
                  "last_name TEXT NOT NULL,"
@@ -61,11 +61,14 @@ def init_post_table():
     conn.close()
 
 
+# functions being called to create the User and Product tables in the database
 init_user_table()
 init_post_table()
 
+# function that fetches the user for login purposes stored in a variable
 users = fetch_users()
 
+# variable that are getting the username and id of the users
 username_table = {u.username: u for u in users}
 userid_table = {u.id: u for u in users}
 
@@ -91,26 +94,30 @@ def protected():
 def add_user():
     response = {}
 
+    #   when the user registers, the http method in the form is post so it will send the names, username,
+    #   password to the database
     if request.method == "POST":
         first_name = request.form['first_name']
         last_name = request.form['last_name']
         username = request.form['username']
         password = request.form['password']
+        #       the email entered will not be added to the database because it is only being used to inform
+        #       the user of their successful registration
         email = request.form['email']
-
+        #       using the database created  to insert the input values from the user
         with sqlite3.connect("product_api.db") as conn:
             cursor = conn.cursor()
             cursor.execute("INSERT INTO users VALUES(null,"
-                           "'"+first_name+"',"
-                           "'"+last_name+"',"
-                           "'"+username+"',"
-                           "'"+password+"')")
+                           "'" + first_name + "',"
+                                              "'" + last_name + "',"
+                                                                "'" + username + "',"
+                                                                                 "'" + password + "')")
             conn.commit()
-            response["message"] = "success"
             response["status_code"] = 201
+            response["message"] = " registration success"
             if response["status_code"] == 201:
                 msg = Message('Registration Successful', sender='lottogirl92@gmail.com', recipients=[email])
-                msg.body = "Welcome '"+ str(first_name)+"', You have Successfully Registered as a user of this app"
+                msg.body = "Welcome '" + str(first_name) + "', You have Successfully Registered as a user of this app"
                 mail.send(msg)
                 return "Sent email"
 
@@ -129,13 +136,13 @@ def add_products():
         with sqlite3.connect("product_api.db") as conn:
             cursor = conn.cursor()
             cursor.execute("INSERT INTO product VALUES(null,"
-                           "'"+product_name+"',"
-                           "'"+description+"',"
-                           "'"+category+"',"
-                           "'"+price+"')")
+                           "'" + product_name + "',"
+                                                "'" + description + "',"
+                                                                    "'" + category + "',"
+                                                                                     "'" + price + "')")
             conn.commit()
-            response["message"] = "success"
             response["status_code"] = 201
+            response["message"] = "Product added successfully"
         return response
 
 
@@ -158,7 +165,7 @@ def view_product(product_id):
     response = {}
     with sqlite3.connect("product_api.db") as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT * FROM product WHERE product_id='"+str(product_id)+"'")
+        cursor.execute("SELECT * FROM product WHERE product_id='" + str(product_id) + "'")
         product = cursor.fetchone()
 
     response['status_code'] = 200
@@ -172,7 +179,7 @@ def delete_product(product_id):
 
     with sqlite3.connect('product_api.db') as conn:
         cursor = conn.cursor()
-        cursor.execute("DELETE FROM product WHERE product_id='"+str(product_id)+"'")
+        cursor.execute("DELETE FROM product WHERE product_id='" + str(product_id) + "'")
 
         conn.commit()
         response['status_code'] = 200
@@ -181,6 +188,7 @@ def delete_product(product_id):
 
 
 @app.route('/edit/<int:product_id>/', methods=['PUT'])
+# update function which allows the user to update a product and it's information
 def edit_products(product_id):
     response = {}
 
@@ -188,49 +196,59 @@ def edit_products(product_id):
         with sqlite3.connect('product_api.db') as conn:
             incoming_data = dict(request.json)
             put_data = {}
-
+            # Conditional Statement
+            # if the user chooses to change the product name the
             if incoming_data.get("product_name") is not None:
                 put_data["product_name"] = incoming_data.get("product_name")
                 with sqlite3.connect('product_api.db') as conn:
                     cursor = conn.cursor()
-                    cursor.execute("UPDATE product SET product_name =? WHERE product_id=?", (put_data["product_name"], product_id))
-
+                    cursor.execute(
+                        "UPDATE product SET product_name ='" + (
+                            put_data["product_name"]) + "' WHERE product_id='" + str(
+                            product_id) + "'")
                     conn.commit()
-                    response['message'] = "Update was successfully"
                     response['status_code'] = 200
+                    response['message'] = " Product Name updated successfully"
 
             elif incoming_data.get("description") is not None:
                 put_data['description'] = incoming_data.get('description')
 
                 with sqlite3.connect('product_api.db') as conn:
                     cursor = conn.cursor()
-                    cursor.execute("UPDATE product SET description =? WHERE product_id=?", (put_data["description"], product_id))
+                    cursor.execute(
+                        "UPDATE product SET description ='" + (
+                            put_data["description"]) + "' WHERE product_id='" + str(
+                            product_id) + "'")
                     conn.commit()
 
-                    response["message"] = "Description updated successfully"
                     response["status_code"] = 200
+                    response["message"] = "Description updated successfully"
 
             elif incoming_data.get("category") is not None:
                 put_data['category'] = incoming_data.get('category')
 
                 with sqlite3.connect('product_api.db') as conn:
                     cursor = conn.cursor()
-                    cursor.execute("UPDATE product SET category =? WHERE product_id=?", (put_data["category"], product_id))
+                    cursor.execute(
+                        "UPDATE product SET category ='" + (
+                            put_data["category"]) + "' WHERE product_id='" + str(
+                            product_id) + "'")
                     conn.commit()
-
-                    response["message"] = "Category updated successfully"
                     response["status_code"] = 200
+                    response["message"] = "Category updated successfully"
 
             elif incoming_data.get("price") is not None:
                 put_data['price'] = incoming_data.get('price')
 
                 with sqlite3.connect('product_api.db') as conn:
                     cursor = conn.cursor()
-                    cursor.execute("UPDATE product SET price =? WHERE product_id=?", (put_data["price"], product_id))
+                    cursor.execute(
+                        "UPDATE product SET price ='"+(
+                            put_data["price"])+"' WHERE product_id='"+str(product_id)+"'" )
                     conn.commit()
 
-                    response["message"] = "Price updated successfully"
                     response["status_code"] = 200
+                    response["message"] = "Price updated successfully"
     return response
 
 
