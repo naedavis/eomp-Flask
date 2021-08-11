@@ -3,6 +3,7 @@ import sqlite3
 from flask import Flask, request, jsonify
 from flask_mail import Mail, Message
 from flask_jwt import JWT, jwt_required, current_identity
+from flask_cors import CORS
 
 
 # OOP
@@ -73,6 +74,9 @@ username_table = {u.username: u for u in users}
 userid_table = {u.id: u for u in users}
 
 app = Flask(__name__)
+CORS(app)
+# cors = CORS(app, resources={r"/*": {"origins": "http://127.0.0.1:5500/"}})
+# ?app.config['CORS_HEADERS'] = 'Content-Type'
 app.config['MAIL_SERVER'] = 'smtp.gmail.com'
 app.config['MAIL_PORT'] = 465
 app.config['MAIL_USERNAME'] = 'lottogirl92@gmail.com'
@@ -81,8 +85,7 @@ app.config['MAIL_USE_TLS'] = False
 app.config['MAIL_USE_SSL'] = True
 mail = Mail(app)
 app.config['SECRET_KEY'] = 'super-secret'
-app.config['TESTING'] = True
-tests = app.test_client()
+
 jwt = JWT(app, authenticate, identity)
 
 
@@ -199,11 +202,13 @@ def edit_products(product_id):
             incoming_data = dict(request.json)
             put_data = {}
             # Conditional Statement
-            # if the user chooses to change the product name the
+            # if the user chooses to change the product name
             if incoming_data.get("product_name") is not None:
                 put_data["product_name"] = incoming_data.get("product_name")
+                # in the database table
                 with sqlite3.connect('product_api.db') as conn:
                     cursor = conn.cursor()
+                    # update the product name to the name the user chooses
                     cursor.execute(
                         "UPDATE product SET product_name ='" + (
                             put_data["product_name"]) + "' WHERE product_id='" + str(
@@ -211,10 +216,10 @@ def edit_products(product_id):
                     conn.commit()
                     response['status_code'] = 200
                     response['message'] = " Product Name updated successfully"
-
+            # if the user chooses to update the description
             elif incoming_data.get("description") is not None:
                 put_data['description'] = incoming_data.get('description')
-
+                #
                 with sqlite3.connect('product_api.db') as conn:
                     cursor = conn.cursor()
                     cursor.execute(
@@ -246,7 +251,7 @@ def edit_products(product_id):
                     cursor = conn.cursor()
                     cursor.execute(
                         "UPDATE product SET price ='"+(
-                            put_data["price"])+"' WHERE product_id='"+str(product_id)+"'" )
+                            put_data["price"])+"'WHERE product_id='"+str(product_id)+"'" )
                     conn.commit()
 
                     response["status_code"] = 200
