@@ -102,13 +102,13 @@ def add_user():
     #   when the user registers, the http method in the form is post so it will send the names, username,
     #   password to the database
     if request.method == "POST":
-        first_name = request.json['first_name']
-        last_name = request.json['last_name']
-        username = request.json['username']
-        password = request.json['password']
+        first_name = request.form['first_name']
+        last_name = request.form['last_name']
+        username = request.form['username']
+        password = request.form['password']
         #       the email entered will not be added to the database because it is only being used to inform
         #       the user of their successful registration
-        email = request.json['email']
+        email = request.form['email']
         #       using the database created  to insert the input values from the user
         with sqlite3.connect("product_api.db") as conn:
             cursor = conn.cursor()
